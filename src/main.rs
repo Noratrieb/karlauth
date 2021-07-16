@@ -2,7 +2,7 @@
 extern crate diesel;
 
 use crate::auth::validator;
-use actix_web::{web, App, Error, HttpServer};
+use actix_web::{web, App, HttpServer};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
@@ -32,6 +32,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(pool.clone())
             .route("/users", web::post().to(handlers::add_user))
+            .route("/admin", web::post().to(handlers::admin_login))
             .service(
                 web::scope("/users")
                     .wrap(auth_middleware)
