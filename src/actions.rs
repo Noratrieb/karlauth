@@ -8,17 +8,16 @@ use diesel::{delete, insert_into};
 
 type DbResult<T> = Result<T, diesel::result::Error>;
 
-pub fn get_all_users(db: &Pool) -> DbResult<User> {
+pub fn get_all_users(db: &Pool) -> DbResult<Vec<User>> {
     use super::schema::users::dsl::*;
     let conn = db.get().unwrap();
-    let items = users.load::<User>(&conn)?;
-    Ok(items)
+    users.load::<User>(&conn)
 }
 
-pub fn get_user_by_id(db: &Pool, id: i32) -> DbResult<User> {
+pub fn get_user_by_id(db: &Pool, user_id: i32) -> DbResult<User> {
     use super::schema::users::dsl::*;
     let conn = db.get().unwrap();
-    users.find(id).get_result::<User>(&conn)
+    users.find(user_id).get_result::<User>(&conn)
 }
 
 pub fn add_user(db: &Pool, user: InputUser) -> DbResult<User> {
@@ -33,8 +32,8 @@ pub fn add_user(db: &Pool, user: InputUser) -> DbResult<User> {
     insert_into(users).values(&new_user).get_result(&conn)
 }
 
-pub fn delete_user(db: &Pool, id: i32) -> DbResult<usize> {
+pub fn delete_user(db: &Pool, user_id: i32) -> DbResult<usize> {
     use super::schema::users::dsl::*;
     let conn = db.get().unwrap();
-    delete(users.find(id)).execute(&conn)
+    delete(users.find(user_id)).execute(&conn)
 }
