@@ -3,9 +3,8 @@ use crate::models::User;
 use actix_web::dev::{Payload, ServiceRequest};
 use actix_web::error::ErrorUnauthorized;
 use actix_web::http::header::Header;
-use actix_web::{FromRequest, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{FromRequest, HttpMessage, HttpRequest};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
-use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::headers::authorization;
 use actix_web_httpauth::headers::authorization::Bearer;
 use chrono::Utc;
@@ -38,19 +37,6 @@ impl FromRequest for Claims {
             Ok(auth) => validate_token(auth.into_scheme().token()),
             Err(_) => Err(ErrorUnauthorized("No Bearer token present")),
         })
-    }
-}
-
-pub async fn validator(
-    req: ServiceRequest,
-    credentials: BearerAuth,
-) -> Result<ServiceRequest, actix_web::Error> {
-    match validate_token(credentials.token()) {
-        Ok(claims) => {
-            req.extensions_mut().insert(claims);
-            Ok(req)
-        }
-        Err(err) => Err(err.into()),
     }
 }
 
