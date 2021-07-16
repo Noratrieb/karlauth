@@ -1,11 +1,17 @@
 use crate::errors::ServiceError;
 use crate::models::User;
 use actix_web::dev::{Payload, ServiceRequest};
+use actix_web::error::ErrorUnauthorized;
+use actix_web::http::header::Header;
 use actix_web::{FromRequest, HttpMessage, HttpRequest, HttpResponse};
 use actix_web_httpauth::extractors::bearer::BearerAuth;
+use actix_web_httpauth::extractors::AuthenticationError;
+use actix_web_httpauth::headers::authorization;
+use actix_web_httpauth::headers::authorization::Bearer;
 use chrono::Utc;
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
+use std::future;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
 pub enum Role {
@@ -28,16 +34,10 @@ impl FromRequest for Claims {
     type Config = ();
 
     fn from_request(req: &HttpRequest, _: &mut Payload) -> Self::Future {
-        std::future::ready(
-            req.extensions()
-                .get::<Claims>()
-                .map(|claims| claims.clone())
-                .ok_or(
-                    HttpResponse::InternalServerError()
-                        .json("Could not get claims")
-                        .into(),
-                ),
-        )
+        future::ready(match authorization::Authorization::<Bearer>::parse(req) {
+            Ok(auth) => validate_token(auth.into_scheme().token()),
+            Err(_) => Err(ErrorUnauthorized("No Bearer token present")),
+        })
     }
 }
 
@@ -54,7 +54,7 @@ pub async fn validator(
     }
 }
 
-fn validate_token(token: &str) -> Result<Claims, ServiceError> {
+fn validate_token(token: &str) -> Result<Claims, actix_web::Error> {
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET env var");
 
     let decoded = jsonwebtoken::decode::<Claims>(
@@ -66,7 +66,7 @@ fn validate_token(token: &str) -> Result<Claims, ServiceError> {
     .claims;
 
     if decoded.exp < Utc::now().timestamp() as usize {
-        Err(ServiceError::TokenExpiredError)
+        Err(ServiceError::TokenExpiredError.into())
     } else {
         Ok(decoded)
     }
@@ -90,7 +90,7 @@ pub fn create_jwt_role(user: &User, role: Role) -> Result<String, ServiceError> 
 
     let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET env var");
 
-    let header = Header::new(Algorithm::HS512);
+    let header = jsonwebtoken::Header::new(Algorithm::HS512);
     jsonwebtoken::encode(
         &header,
         &claims,

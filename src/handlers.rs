@@ -1,5 +1,6 @@
 use super::actions;
 use super::Pool;
+use crate::auth::Role::Admin;
 use crate::auth::{create_jwt, create_jwt_role, Claims, Role};
 use crate::models::User;
 use actix_web::error::ErrorUnauthorized;
@@ -101,5 +102,13 @@ pub async fn admin_login(credentials: Json<LoginData>) -> HttpResult {
         )?))
     } else {
         Err(ErrorUnauthorized("Incorrect credentials"))
+    }
+}
+
+pub async fn test_auth(claims: Claims) -> HttpResult {
+    if claims.role == Admin {
+        Ok(HttpResponse::Ok().body("Nice du bist admin"))
+    } else {
+        Err(ErrorUnauthorized("kein admin :("))
     }
 }

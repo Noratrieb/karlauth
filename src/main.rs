@@ -32,6 +32,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(pool.clone())
             .route("/users", web::post().to(handlers::add_user))
+            .route("/test", web::get().to(handlers::test_auth))
             .route("/admin", web::post().to(handlers::admin_login))
             .service(
                 web::scope("/users")
