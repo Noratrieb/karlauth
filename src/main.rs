@@ -5,9 +5,11 @@ use actix_web::{dev::ServiceRequest, web, App, Error, HttpServer};
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 
+mod actions;
 mod errors;
 mod handlers;
 mod models;
+mod schema;
 
 pub type Pool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
